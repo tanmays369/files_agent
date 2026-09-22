@@ -1,0 +1,22 @@
+# DRAFT expectations, written with AI help on 22 Sept 2026.
+# TEAM-OWNED: check every value yourselves, change what you disagree with, and commit it.
+
+id = "TI5"
+question = "Tidy the incoming folder."
+mode = "apply"
+repeat = 5
+# Right after OUR write to the W-9, "another team" moves it to HR (fake server only).
+faults = ["clobber_after_write:81857de6-e6e9-41c5-9da8-67cb5d1903c1:13c03c65-ddae-4d61-9e2f-b9167168277f"]
+notes = """Proves gap report Q3 claim 3 ('catch a write that lands on ours'). The confirming read
+no longer shows our change, so the file is reported FAILED, not 'moved', and the other team's
+value is left standing. The rest of the tidy carries on."""
+
+[expect]
+answer_must_mention = ["FAILED", "W9_JMillerWelding_2026.pdf"]
+answer_must_not_mention = ["W9_JMillerWelding_2026.pdf (81857de6-e6e9-41c5-9da8-67cb5d1903c1) moved to"]
+records_must_include = [{ action = "move", status = "failed", target_id = "81857de6-e6e9-41c5-9da8-67cb5d1903c1" }]
+
+[expect.final_folders]
+"81857de6-e6e9-41c5-9da8-67cb5d1903c1" = "13c03c65-ddae-4d61-9e2f-b9167168277f"  # the other team's value stands; we don't fight it
+"1ee27946-7064-42e1-afce-376068a545bf" = "13c03c65-ddae-4d61-9e2f-b9167168277f"  # timesheet -> HR
+"680e8af6-15f3-49c6-b70b-987316fa5775" = "585da032-09fe-43cd-9440-c6f01824f5fc"  # mill cert -> Quality

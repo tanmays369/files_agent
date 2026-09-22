@@ -1,0 +1,26 @@
+# DRAFT expectations, written with AI help from live Keystone data on 22 Sept 2026.
+# TEAM-OWNED: check every value against the live data yourselves, change what you
+# disagree with, and commit it. The harness engine reads these; you own them.
+
+id = "TI1"
+question = "Tidy the incoming folder."
+mode = "read"          # plan only: nothing may be written
+repeat = 5
+
+[expect]
+writes = 0
+answer_must_mention = ["plan only", "duplicate", "Untitled.pdf", "scan0042.pdf", "IMG_20260814_093214.jpg"]
+planned_not_filed = [
+  "60f685c9-bcb5-43a3-a403-18b7e9d76368",  # Untitled.pdf
+  "b1d3894c-12e9-4ee1-b1da-82c7191ed4a0",  # scan0042.pdf
+  "8018a70b-47d5-472b-88b6-b1ced1ced8b0",  # IMG_20260814_093214.jpg
+]
+cited_ids_must_resolve = true
+
+[expect.planned_folders]
+"1ee27946-7064-42e1-afce-376068a545bf" = "13c03c65-ddae-4d61-9e2f-b9167168277f"  # timesheet -> HR
+"b45cecdd-9f14-491a-a0ee-2826d3fabb15" = "0449912e-f8c2-406f-b983-a2beca76ea93"  # J-KNOB-09 -> Jig & Fixture
+"680e8af6-15f3-49c6-b70b-987316fa5775" = "585da032-09fe-43cd-9440-c6f01824f5fc"  # mill cert -> Quality
+"81857de6-e6e9-41c5-9da8-67cb5d1903c1" = "cbb1441f-5a73-4989-846b-775f6a1e9e70"  # W-9 -> Purchasing
+"732439a0-7f36-4d31-ac3b-f406c41c00bd" = "cbb1441f-5a73-4989-846b-775f6a1e9e70"  # PO -> Purchasing
+"82f83d94-5a46-4df3-9ee1-61e8b3c79d6e" = "cbb1441f-5a73-4989-846b-775f6a1e9e70"  # PO duplicate -> Purchasing

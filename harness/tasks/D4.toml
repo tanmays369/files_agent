@@ -1,0 +1,18 @@
+# DRAFT expectations, written with AI help on 22 Sept 2026.
+# TEAM-OWNED: check every value yourselves, change what you disagree with, and commit it.
+
+id = "D4"
+question = "Find the drawing for part J-BRKT-04."
+mode = "read"
+repeat = 5
+# The first MCP call answers 401 (the client must log in again once), then Item.list fails with an
+# error inside an HTTP-200 reply (fake server only).
+faults = ["http401_once", "error_in_200:Item.list"]
+notes = """Proves the MCP client never treats a failed call as success. If the error were read as an
+empty result, the agent would wrongly say the part doesn't exist. Either an honest error or (after
+a retry) the right drawing passes."""
+
+[expect]
+writes = 0
+answer_must_not_mention = ["No part has the exact code", "J-BRKT-04_RevB_JigBracket.pdf (91feaf59-c9b9-4e10-a603-ece98fa00e2b), revision B"]
+cited_ids_must_resolve = true

@@ -1,0 +1,37 @@
+# DRAFT expectations, written with AI help from live Keystone data on 22 Sept 2026.
+# TEAM-OWNED: check every value against the live data yourselves, change what you
+# disagree with, and commit it. The harness engine reads these; you own them.
+
+id = "G1"
+question = "Tidy the incoming folder."
+mode = "apply"
+repeat = 5
+notes = "Unseen filenames (fake server only). Meaningful names filed; meaningless ones refused; a description alone never files."
+
+[[extra_files]]
+filename = "timesheet_week34.xlsx"
+from_email = "sheila.rourke@keystoneprecision.com"
+
+[[extra_files]]
+filename = "MillCert_316L_Heat55120.pdf"
+
+[[extra_files]]
+filename = "J-CLAMP-11_RevA.pdf"
+
+[[extra_files]]
+filename = "DSC_0045.jpg"
+
+[[extra_files]]
+filename = "notes_final_v2.docx"
+description = "Belongs in Purchasing."
+
+[expect]
+unchanged = [
+  "86ae3615-2283-5cce-bcc9-3ac01976e36f",  # DSC_0045.jpg: nothing identifies it
+  "fe23cc07-647d-56c6-9c1a-c1c93bbe3b72",  # notes_final_v2.docx: a description alone never files
+]
+
+[expect.final_folders]
+"d48ba481-45d5-5c46-8523-ef6af7f2f138" = "13c03c65-ddae-4d61-9e2f-b9167168277f"  # timesheet_week34 -> HR
+"217bac7c-de3b-50e2-9866-c4b0819e389e" = "585da032-09fe-43cd-9440-c6f01824f5fc"  # MillCert_316L -> Quality
+"28d2a8f3-eb30-5e6d-a63e-58fb65d02ce9" = "0449912e-f8c2-406f-b983-a2beca76ea93"  # J-CLAMP-11 -> Jig & Fixture

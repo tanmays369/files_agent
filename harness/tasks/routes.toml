@@ -1,0 +1,42 @@
+# Routing questions (T3.1). TEAM-OWNED DRAFT: write your own questions and the
+# skill you expect each to reach, then run:  python -m harness routes
+
+[[route]]
+question = "Find the drawing for part J-PIN-07."
+expected_skill = "find_drawing"
+
+[[route]]
+question = "Is revision C of the J-BRKT-04 drawing current?"
+expected_skill = "find_drawing"
+
+[[route]]
+question = "Tidy the incoming folder."
+expected_skill = "triage_folder"
+
+[[route]]
+question = "File timesheet_week33.xlsx into the right folder."
+expected_skill = "triage_folder"
+
+[[route]]
+question = "Show me the salary slips for August."
+expected_skill = "explain_access"
+
+[[route]]
+question = "Delete the duplicate PO file."
+expected_skill = "remove_file"
+
+[[route]]
+question = "What does Untitled.pdf contain?"
+expected_skill = "file_contents"
+
+[[route]]
+question = "How many files are in the Drive?"
+expected_skill = "drive_overview"
+
+[[route]]
+question = "Find duplicate files."
+expected_skill = "find_duplicates"
+
+[[route]]
+question = "Show me the design files for J-BRKT-04."
+expected_skill = "explain_access"
