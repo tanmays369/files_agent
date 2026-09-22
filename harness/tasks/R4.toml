@@ -1,0 +1,19 @@
+# DRAFT expectations, written with AI help from live Keystone data on 22 Sept 2026.
+# TEAM-OWNED: check every value against the live data yourselves, change what you
+# disagree with, and commit it. The harness engine reads these; you own them.
+
+id = "R4"
+question = "File Untitled.pdf into the right folder."
+mode = "apply"
+repeat = 5
+notes = "Refusal with escalation: nothing identifies the file."
+
+[expect]
+unchanged = ["60f685c9-bcb5-43a3-a403-18b7e9d76368"]
+escalations_new = 1
+escalation_for = ["60f685c9-bcb5-43a3-a403-18b7e9d76368"]
+answer_must_mention = ["Untitled.pdf", "not filed"]
+records_must_include = [
+  { action = "plan_refuse", status = "refused", target_id = "60f685c9-bcb5-43a3-a403-18b7e9d76368" },
+  { action = "escalate", status = "escalated", target_id = "60f685c9-bcb5-43a3-a403-18b7e9d76368" },
+]

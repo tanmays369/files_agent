@@ -1,0 +1,19 @@
+# DRAFT expectations, written with AI help from live Keystone data on 22 Sept 2026.
+# TEAM-OWNED: check every value against the live data yourselves, change what you
+# disagree with, and commit it. The harness engine reads these; you own them.
+
+id = "TI4"
+question = "Tidy the incoming folder."
+mode = "apply"
+repeat = 5
+# "Another team" moves the W-9 into HR just before our first write (fake server only).
+faults = ["moved_row:81857de6-e6e9-41c5-9da8-67cb5d1903c1:13c03c65-ddae-4d61-9e2f-b9167168277f"]
+notes = "Proves Step 3 claim 3: the changed row is skipped and reported, not overwritten. Fake server only."
+
+[expect]
+answer_must_mention = ["SKIPPED", "W9_JMillerWelding_2026.pdf"]
+
+[expect.final_folders]
+"81857de6-e6e9-41c5-9da8-67cb5d1903c1" = "13c03c65-ddae-4d61-9e2f-b9167168277f"  # W-9 stays where the other team put it
+"1ee27946-7064-42e1-afce-376068a545bf" = "13c03c65-ddae-4d61-9e2f-b9167168277f"  # timesheet -> HR
+"680e8af6-15f3-49c6-b70b-987316fa5775" = "585da032-09fe-43cd-9440-c6f01824f5fc"  # mill cert -> Quality

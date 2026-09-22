@@ -1,0 +1,12 @@
+[project]
+name = "files-agent"
+version = "0.1.0"
+description = "Files Agent for AgentSwitch seat 20 (Team 20): agent + harness"
+requires-python = ">=3.11"
+dependencies = []          # standard library only
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]        # only if staff confirm pytest is allowed (question Q3)
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

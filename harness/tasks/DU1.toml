@@ -1,0 +1,15 @@
+# DRAFT expectations, written with AI help on 22 Sept 2026.
+# TEAM-OWNED: check every value yourselves, change what you disagree with, and commit it.
+
+id = "DU1"
+question = "Find duplicate files."
+mode = "read"
+repeat = 5
+notes = "The find_duplicates skill: the PO pair is matched on recorded hash + size + name and never called byte-verified."
+
+[expect]
+writes = 0
+answer_must_mention = ["PO_4471_ApexMetals_signed (1).pdf", "not byte-verified"]
+answer_must_cite = ["82f83d94-5a46-4df3-9ee1-61e8b3c79d6e", "732439a0-7f36-4d31-ac3b-f406c41c00bd"]
+records_must_include = [{ action = "duplicate", target_id = "82f83d94-5a46-4df3-9ee1-61e8b3c79d6e" }]
+cited_ids_must_resolve = true

@@ -1,0 +1,16 @@
+# DRAFT expectations, written with AI help from live Keystone data on 22 Sept 2026.
+# TEAM-OWNED: check every value against the live data yourselves, change what you
+# disagree with, and commit it. The harness engine reads these; you own them.
+
+id = "D2"
+question = "Find the drawing for part KJ-BRKT-04."
+mode = "read"
+repeat = 5
+
+[expect]
+writes = 0
+answer_must_mention = ["KJ-BRKT-04_RevA_BenchBracketSet.pdf"]
+answer_must_cite = ["e6010f05-1e88-47be-92a2-7ed2005b2c90"]
+answer_must_not_cite = ["2683b2c8-f700-4870-981c-1fb9c8d53393", "91feaf59-c9b9-4e10-a603-ece98fa00e2b"]
+cited_ids_must_resolve = true
+records_must_include = [{ action = "current_drawing", target_id = "e6010f05-1e88-47be-92a2-7ed2005b2c90" }]
