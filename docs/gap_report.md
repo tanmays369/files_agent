@@ -29,8 +29,8 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 - **Part-to-drawing resolver** (`files.find_drawing`). It matches `Item.code` exactly, then finds files by `entity_id` and filename, and ranks them by `is_archived`, folder and revision. It flags KJ-BRKT-04 as a different part from J-BRKT-04.
 - **Evidence-scored Incoming triage** (`files.tidy_incoming`). It scores each file on its linked record, sender, filename and description, treating all of these as evidence and never as instructions. From 9 files it files 5 by updating `folder_id`. It spots the duplicate PO on filename, sender and size, since the hash can't be trusted, and archives it with a pointer to the original. It escalates the other 3 and names what is missing for each.
 - **Undo log and clobber check.** It snapshots every row before a write, re-reads it after the write, and reports if another seat has overwritten its change.
-- **Scheduled triage** through AgentTask. The agent checks its own task's result with `AgentTask.get`, because MCP rejects filtering on the values the server actually writes (`queued`, `job_failed`). *Filed as a bug.*
-- **Calling the MCP tools safely.** The agent never sends a list tool's advertised defaults, which return 0 rows. It sends "arrived today" as an explicit timestamp range rather than a bare date, which silently returns nothing. *Both filed as bugs.*
+- **Scheduled triage, run from our own harness.** We can't rely on AgentTask for this. The platform scheduler counts runs that never happen: `run_count` rises, the status stays `queued`, and the run's session doesn't exist. A `cron` task with no expression also silently runs hourly. Our harness runs triage on its own timer and treats a run as done only when it finds the files actually moved. It checks task results with `AgentTask.get`, because MCP rejects filtering on the values the server writes (`queued`, `job_failed`). *Filed as bugs.*
+- **Calling the MCP tools safely.** The agent never sends a list tool's advertised defaults, which return 0 rows. It sends "arrived today" as an explicit timestamp range rather than a bare date, which silently returns nothing. It never filters on fields the server computes on read (e.g. `SalesOrder.net_total`), because MCP advertises them and then rejects them. *All filed as bugs.*
 
 **Platform work:**
 
@@ -40,6 +40,7 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 - Add an `expect_updated_at` guard on file updates, like the `expect_status` guard escalations already have.
 - Gate `FileAttachment`, `Notification` and search by the owning app. *Filed as a bug: 83 e-sign titles, including 3 offer letters, and 92 notifications are visible to our seat.*
 - Add a document-type custom field, and give Automations access to filing rules.
+- Make the AgentTask scheduler execute runs, time out stuck ones, and reject schedules it can't parse.
 
 ## 3. What can our agent do that their products cannot?
 
@@ -49,7 +50,7 @@ Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files a
 - **It refuses with evidence.** `scan0042.pdf` has no linked record, no sender and no readable content, and its own description says a human must open it. So the agent escalates it. None of the products we tested returns "no answer, and exactly why" as a normal result.
 - **It catches a write that lands on top of ours.** There is no concurrency guard, so the agent re-reads after each write and reports when another seat has overwritten its change. A UI user never sees that.
 
-**Bugs filed by team20:** 23. The 10 filed on 24 Sep:
+**Bugs filed by team20:** 26. The 13 filed on 24 Sep:
 1. MCP list tools advertise filter defaults that return 0 rows
 2. Search treats `%` and `_` as wildcards
 3. Every Drive revision download returns 409
@@ -60,3 +61,6 @@ Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files a
 8. AgentProvider accepts out-of-range settings, with two defaults
 9. MCP enums omit values the server writes
 10. Keystone AccountPlan rows missing their required links
+11. Scheduled tasks count runs that produce nothing
+12. AgentTask schedules not validated (cron tasks with no expression run hourly)
+13. SalesOrder.list advertises computed totals as filters, then refuses them
