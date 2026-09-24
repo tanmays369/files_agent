@@ -13,12 +13,13 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 - **They enforce revision state.** Onshape blocks an obsolete revision from being used in new assemblies. Vault's Released and Obsolete states change what users may do. None of our 10 Drive entities has a workflow. "Rev B is superseded" exists only as tags, a description and `is_archived`, and any seat can edit those.
 - **They link part to drawing as data.** Onshape tracks revisions per part number. Our `Item.design_file_id` points into design review, which returns 403 for our seat, and it is empty on all 28 Keystone parts. Drive files link to parts only through an untyped text field, `entity_id`.
 - **They file by typed metadata.** SharePoint autofill fills a column from a prompt and a term list. M-Files files by metadata, not folders. We have no document type, expiry or tax year, and no custom fields.
-- **They search completely.** Global search caps at 5 hits per type (5 for "Agreement", where the file list holds 32). File search ignores tags and descriptions. It also treats `%` and `_` as wildcards, so `search=%` returns every file. *The cap and the wildcards are filed as bugs.*
+- **They search completely.** Global search caps at 5 hits per type (5 for "Agreement", where the file list holds 32). File search ignores tags and descriptions. It also treats `%` and `_` as wildcards, so `search=%` returns every file. Date filters compare as text: `created_at=2026-09-16` returns 0 of the 98 Keystone files created that day, and `gt:2026-09-16` wrongly includes them. *The cap, the wildcards and the date filters are filed as bugs.*
 - **They let you edit safely, with an undo trail.** Box rejects a stale update with 412 via If-Match. Vault check-out locks a file. Google's Drive Activity API logs every move. We have none of that:
   - No concurrency guard, so the last write wins.
   - No delete.
   - A trash route that can't see Keystone's files.
   - An access log written by the browser rather than the server. *Filed as a bug.*
+  - Agent sessions opened over the API are recorded as `anonymous`, even though the server knows who opened them (33 of 33). *Filed as a bug.*
 - **Their file hashes can be trusted.** In a normal drive, a content hash identifies the file's bytes, so matching hashes means a duplicate. Ours can't be used for that: all 21 Suryodaya files share one hash, and Keystone mixes 16- and 64-character hashes. *Filed as a bug.*
 
 ## 2. Which gaps can our agent close today?
@@ -28,8 +29,8 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 - **Part-to-drawing resolver** (`files.find_drawing`). It matches `Item.code` exactly, then finds files by `entity_id` and filename, and ranks them by `is_archived`, folder and revision. It flags KJ-BRKT-04 as a different part from J-BRKT-04.
 - **Evidence-scored Incoming triage** (`files.tidy_incoming`). It scores each file on its linked record, sender, filename and description, treating all of these as evidence and never as instructions. From 9 files it files 5 by updating `folder_id`. It spots the duplicate PO on filename, sender and size, since the hash can't be trusted, and archives it with a pointer to the original. It escalates the other 3 and names what is missing for each.
 - **Undo log and clobber check.** It snapshots every row before a write, re-reads it after the write, and reports if another seat has overwritten its change.
-- **Scheduled triage** through AgentTask.
-- **Calling the MCP tools safely.** The agent never sends a list tool's advertised defaults, which return 0 rows. *Filed as a bug.*
+- **Scheduled triage** through AgentTask. The agent checks its own task's result with `AgentTask.get`, because MCP rejects filtering on the values the server actually writes (`queued`, `job_failed`). *Filed as a bug.*
+- **Calling the MCP tools safely.** The agent never sends a list tool's advertised defaults, which return 0 rows. It sends "arrived today" as an explicit timestamp range rather than a bare date, which silently returns nothing. *Both filed as bugs.*
 
 **Platform work:**
 
@@ -48,4 +49,14 @@ Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files a
 - **It refuses with evidence.** `scan0042.pdf` has no linked record, no sender and no readable content, and its own description says a human must open it. So the agent escalates it. None of the products we tested returns "no answer, and exactly why" as a normal result.
 - **It catches a write that lands on top of ours.** There is no concurrency guard, so the agent re-reads after each write and reports when another seat has overwritten its change. A UI user never sees that.
 
-**Bugs filed by team20:** 18 (5 on 24 Sep: MCP list defaults, search wildcards, revision downloads, `content_hash`, unvalidated filter values).
+**Bugs filed by team20:** 23. The 10 filed on 24 Sep:
+1. MCP list tools advertise filter defaults that return 0 rows
+2. Search treats `%` and `_` as wildcards
+3. Every Drive revision download returns 409
+4. `content_hash` does not identify content
+5. Unparseable filter values return 0 instead of 400
+6. Date-only filters compared as text against timestamps
+7. API agent sessions recorded as anonymous
+8. AgentProvider accepts out-of-range settings, with two defaults
+9. MCP enums omit values the server writes
+10. Keystone AccountPlan rows missing their required links
