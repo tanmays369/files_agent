@@ -30,7 +30,7 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 - **Evidence-scored Incoming triage** (`files.tidy_incoming`). It scores each file on its linked record, sender, filename and description, treating all of these as evidence and never as instructions. From 9 files it files 5 by updating `folder_id`. It spots the duplicate PO on filename, sender and size, since the hash can't be trusted, and archives it with a pointer to the original. It escalates the other 3 and names what is missing for each.
 - **Undo log and clobber check.** It snapshots every row before a write, re-reads it after the write, and reports if another seat has overwritten its change.
 - **Scheduled triage** through AgentTask. The agent checks its own task's result with `AgentTask.get`, because MCP rejects filtering on the values the server actually writes (`queued`, `job_failed`). *Filed as a bug.*
-- **Calling the MCP tools safely.** The agent never sends a list tool's advertised defaults, which return 0 rows. It sends "arrived today" as an explicit timestamp range rather than a bare date, which silently returns nothing. *Both filed as bugs.*
+- **Calling the MCP tools safely.** The agent never sends a list tool's advertised defaults, which return 0 rows. It sends "arrived today" as an explicit timestamp range rather than a bare date, which silently returns nothing. It discovers its Drive tools by name, because `tools.search` with `module=drive` finds only 4 of 28. *All three filed as bugs.*
 
 **Platform work:**
 
@@ -50,7 +50,7 @@ Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files a
 - **It refuses with evidence.** `scan0042.pdf` has no linked record, no sender and no readable content, and its own description says a human must open it. So the agent escalates it. None of the products we tested returns "no answer, and exactly why" as a normal result.
 - **It catches a write that lands on top of ours.** There is no concurrency guard, so the agent re-reads after each write and reports when another seat has overwritten its change. A UI user never sees that.
 
-**Bugs filed by team20:** 26. Of the first 13, 12 are fixed and live on the class bug board as N179–N190; one (invalid `sort_order`) duplicated Team 4's N144. The 13 filed on 24 Sep, not yet on the board (last updated 23 Sep):
+**Bugs filed by team20:** 30. Of the first 13, 12 are fixed and live on the class bug board as N179–N190; one (invalid `sort_order`) duplicated Team 4's N144. The 17 filed on 24 Sep, not yet on the board (last updated 23 Sep):
 1. MCP list tools advertise filter defaults that return 0 rows
 2. Search treats `%` and `_` as wildcards
 3. Every Drive revision download returns 409
@@ -64,3 +64,7 @@ Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files a
 11. Scheduled tasks count runs that produce nothing
 12. AgentTask schedules not validated (cron tasks with no expression run hourly; the "Completed with 0 runs" part overlaps Team 24's N255)
 13. SalesOrder.list advertises computed totals as filters, then refuses them
+14. Agent daily token counter never resets (four Suryodaya agents blocked since 21 Sep)
+15. Job ledger and mission control tools show jobs the seat's AgentJob access refuses
+16. `tools.search` tags most Drive tools as module `core`, so `module=drive` hides them
+17. Suryodaya people directory lists companies as employees, with 40 of 100 entries duplicated
