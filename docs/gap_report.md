@@ -1,37 +1,51 @@
 # Gap Report — Seat 20, Files Agent
 
-**Team 20** · measured live, **21 September 2026** · Benchmarks: **Box** (primary), **Onshape** and **Autodesk Vault** (revision control), Egnyte, M-Files, SharePoint
+Team 20 · measured live, 21–24 September 2026, on Suryodaya and Keystone
+Benchmarks: Box (primary), Onshape and Autodesk Vault (revision control), Egnyte, M-Files, SharePoint
+
+**In one line:** our Drive stores records but not readable bytes, revision state or safe edits. Our agent can still find the right drawing and triage Incoming today, using the tools the seat already has.
+
+Why Box is the primary benchmark: it is the closest thing to Rillet for files. It has AI field extraction from documents, agents that run multi-step file work, and an MCP server over its own content. A competitor has already shipped an agent over a drive.
 
 ## 1. What do they do that we do not?
 
-1. **Read file contents.** Box extracts fields from documents with OCR. We store no bytes: every Suryodaya download returns `409 Revision bytes are unavailable`; Keystone has zero revisions.
-2. **Enforce revision state.** Onshape blocks an obsoleted revision from new assemblies; Vault's Released/Obsolete states change what users may do. None of our 10 Drive entities has a workflow. "Rev B is superseded" is just tags, a description and `is_archived`, which any seat can edit.
-3. **Link part to drawing as data.** Onshape tracks revisions per part number. Our `Item.design_file_id` points into design review (403 for us) and is empty on all 28 Keystone parts; Drive files link to parts by an untyped text `entity_id`.
-4. **File by typed metadata.** SharePoint autofill fills a column from a prompt and a term list; M-Files files by metadata, not folders. We have no document type, expiry or tax year, and no custom fields defined.
-5. **Search completely.** Our global search returns at most 5 hits per type, ignores `limit` and gives no total (5 for "Agreement", where the file list holds 32), and never reads tags or descriptions.
-6. **Edit safely, with an undo trail.** Box rejects a stale update with `412` via `If-Match`; Vault check-out locks a file; Google's Drive Activity API logs every move. We have no concurrency guard (last write wins), no way to delete, a trash route that can't see Keystone's files, and an access log written by the browser rather than the server.
-7. **Keep other apps' data out** *(a defect)*. `FileAttachment` shows us 83 e-sign titles, 3 of them employee offer letters; `Notification` shows 92 approval, contract and design notices. We get 403 on all those apps.
+- **They read file contents.** Box extracts fields from documents with OCR. We can't open any file: every Drive revision download returns 409 "Revision bytes are unavailable" (21 of 21 on Suryodaya, 15 of 15 on Keystone). *Filed as a bug.*
+- **They enforce revision state.** Onshape blocks an obsolete revision from being used in new assemblies. Vault's Released and Obsolete states change what users may do. None of our 10 Drive entities has a workflow. "Rev B is superseded" exists only as tags, a description and `is_archived`, and any seat can edit those.
+- **They link part to drawing as data.** Onshape tracks revisions per part number. Our `Item.design_file_id` points into design review, which returns 403 for our seat, and it is empty on all 28 Keystone parts. Drive files link to parts only through an untyped text field, `entity_id`.
+- **They file by typed metadata.** SharePoint autofill fills a column from a prompt and a term list. M-Files files by metadata, not folders. We have no document type, expiry or tax year, and no custom fields.
+- **They search completely.** Global search caps at 5 hits per type (5 for "Agreement", where the file list holds 32). File search ignores tags and descriptions. It also treats `%` and `_` as wildcards, so `search=%` returns every file. *The cap and the wildcards are filed as bugs.*
+- **They let you edit safely, with an undo trail.** Box rejects a stale update with 412 via If-Match. Vault check-out locks a file. Google's Drive Activity API logs every move. We have none of that:
+  - No concurrency guard, so the last write wins.
+  - No delete.
+  - A trash route that can't see Keystone's files.
+  - An access log written by the browser rather than the server. *Filed as a bug.*
+- **Their file hashes can be trusted.** In a normal drive, a content hash identifies the file's bytes, so matching hashes means a duplicate. Ours can't be used for that: all 21 Suryodaya files share one hash, and Keystone mixes 16- and 64-character hashes. *Filed as a bug.*
 
 ## 2. Which gaps can our agent close today?
 
-**Ours to build:**
-- **Part → drawing resolver** (gaps 2–3): exact `Item.code` match, then files by `entity_id`, ranked by `is_archived`, folder and revision. Flag `KJ-BRKT-04` as a different part.
-- **Evidence-scored Incoming triage** (gap 4): score each file on linked record, sender, filename and description (as evidence, never as instructions). File 5 of 9. Match the duplicate PO on recorded hash + size and archive it with a pointer. Escalate the other 3, naming what is missing.
-- **Undo log and clobber check** (gap 6): snapshot first, re-read after every write, report overwrites.
-- **Scheduled triage** via `AgentTask` cron.
+**Ours to build**, using the seat's existing tools (`FileAttachment.list/get/update`, `DriveFolder.list/get`, `DriveFileRevision.list`, `Item.list/get`, `AgentTask`, `endpoint.agent.tasks.run`):
+
+- **Part-to-drawing resolver** (`files.find_drawing`). It matches `Item.code` exactly, then finds files by `entity_id` and filename, and ranks them by `is_archived`, folder and revision. It flags KJ-BRKT-04 as a different part from J-BRKT-04.
+- **Evidence-scored Incoming triage** (`files.tidy_incoming`). It scores each file on its linked record, sender, filename and description, treating all of these as evidence and never as instructions. From 9 files it files 5 by updating `folder_id`. It spots the duplicate PO on filename, sender and size, since the hash can't be trusted, and archives it with a pointer to the original. It escalates the other 3 and names what is missing for each.
+- **Undo log and clobber check.** It snapshots every row before a write, re-reads it after the write, and reports if another seat has overwritten its change.
+- **Scheduled triage** through AgentTask.
+- **Calling the MCP tools safely.** The agent never sends a list tool's advertised defaults, which return 0 rows. *Filed as a bug.*
 
 **Platform work:**
-- Store bytes, or pass the email app's existing `extracted_text` into Drive (7 of 9 Incoming files came by email).
-- Wire Drive to design review's existing release flow instead of building new revision tables.
-- Trash/restore for rows without revisions — not delete, since every seat can write these tables.
-- An `expect_updated_at` guard on file updates, like the one escalations already have.
-- Gate `FileAttachment`, `Notification` and search by the owning app.
-- A document-type custom field, and Automations access for filing rules.
+
+- Store the bytes, or pass the email app's existing `extracted_text` into Drive (7 of the 9 Incoming files arrived by email).
+- Wire Drive into design review's existing release flow, instead of building new revision tables.
+- Add trash and restore for rows without revisions. Not delete, because every seat can write these tables.
+- Add an `expect_updated_at` guard on file updates, like the `expect_status` guard escalations already have.
+- Gate `FileAttachment`, `Notification` and search by the owning app. *Filed as a bug: 83 e-sign titles, including 3 offer letters, and 92 notifications are visible to our seat.*
+- Add a document-type custom field, and give Automations access to filing rules.
 
 ## 3. What can our agent do that their products cannot?
 
-Box Automate (GA 28 April 2026) and M-Files' agents already run multi-step work, and SharePoint, M-Files and Egnyte all review before applying. Our edge is elsewhere:
+Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files and Egnyte all show suggestions for review before applying them. Our edge is elsewhere:
 
-1. **Work against a platform that contradicts itself.** On Keystone the Drive UI, the storage overview and every `/api/drive/files` route say Incoming is empty; the record API lists 9 files. Our agent uses the surface that answers the question and says which one.
-2. **Refuse with evidence.** For `scan0042.pdf`: no linked record, sender or readable content; its own description says a human must open it; escalated. The benchmarks we examined review *suggestions* — none returns "no answer, and exactly why" as a normal result.
-3. **Catch a write that lands on ours.** With no concurrency guard, it re-reads after each write and reports when another seat overwrote its change. A UI user never sees that.
+- **It works against a platform that contradicts itself.** Different surfaces give different answers about the same files. The agent answers from the surface that actually holds the data, and says which one it used.
+- **It refuses with evidence.** `scan0042.pdf` has no linked record, no sender and no readable content, and its own description says a human must open it. So the agent escalates it. None of the products we tested returns "no answer, and exactly why" as a normal result.
+- **It catches a write that lands on top of ours.** There is no concurrency guard, so the agent re-reads after each write and reports when another seat has overwritten its change. A UI user never sees that.
+
+**Bugs filed by team20:** 18 (5 on 24 Sep: MCP list defaults, search wildcards, revision downloads, `content_hash`, unvalidated filter values).
