@@ -1,6 +1,6 @@
 # Gap Report — Seat 20, Files Agent
 
-Team 20 · measured live, 21–24 September 2026, on Suryodaya and Keystone
+Team 20 · measured live, 21–25 September 2026, on Suryodaya and Keystone
 Benchmarks: Box (primary), Onshape and Autodesk Vault (revision control), Egnyte, M-Files, SharePoint
 
 **In one line:** our Drive stores records but not readable bytes, revision state or safe edits. Our agent can still find the right drawing and triage Incoming today, using the tools the seat already has.
@@ -13,12 +13,12 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 - **They enforce revision state.** Onshape blocks an obsolete revision from being used in new assemblies. Vault's Released and Obsolete states change what users may do. None of our 10 Drive entities has a workflow. "Rev B is superseded" exists only as tags, a description and `is_archived`, and any seat can edit those.
 - **They link part to drawing as data.** Onshape tracks revisions per part number. Our `Item.design_file_id` points into design review, which returns 403 for our seat, and it is empty on all 28 Keystone parts. Drive files link to parts only through an untyped text field, `entity_id`.
 - **They file by typed metadata.** SharePoint autofill fills a column from a prompt and a term list. M-Files files by metadata, not folders. We have no document type, expiry or tax year, and no custom fields.
-- **They search completely.** File search ignores tags and descriptions. It also treats `%` and `_` as wildcards, so `search=%` returns every file. Date filters compare as text: `created_at=2026-09-16` returns 0 of the 98 Keystone files created that day, and `gt:2026-09-16` wrongly includes them. *The wildcards and the date filters are filed as bugs.* Global search used to cap at 5 hits per type; we reported it and it is now fixed (board N186).
+- **They search completely.** File search ignores tags and descriptions. It also treats `%` and `_` as wildcards, so `search=%` returns every file. Date filters compare as text: `created_at=2026-09-16` returns 0 of the 98 Keystone files created that day, and `gt:2026-09-16` wrongly includes them. Global search now reports a total (board N186) but still returns 5 per type and ignores `limit` and `offset`, so 27 of 40 "Agreement" matches can't be reached. *The wildcards, the date filters and the search paging are filed as bugs.*
 - **They let you edit safely, with an undo trail.** Box rejects a stale update with 412 via If-Match. Vault check-out locks a file. Google's Drive Activity API logs every move. We have none of that:
   - No concurrency guard, so the last write wins.
   - No delete.
   - A trash route that can't see Keystone's files.
-  - An access log that was written by the browser rather than the server. *We reported it; now fixed (board N185).*
+  - An access log that was written by the browser rather than the server (fixed, board N185). The 23 Sep Drive repair then copied five past events into it with new dates, attributed to named people. *Filed as a bug.*
   - Agent sessions opened over the API are recorded as `anonymous`, even though the server knows who opened them (33 of 33). *Filed as a bug.*
 - **Their file hashes can be trusted.** In a normal drive, a content hash identifies the file's bytes, so matching hashes means a duplicate. Ours can't be used for that: all 21 Suryodaya files share one hash, and Keystone mixes 16- and 64-character hashes. *Filed as a bug.*
 
@@ -38,7 +38,8 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 - Wire Drive into design review's existing release flow, instead of building new revision tables.
 - Add trash and restore for rows without revisions. Not delete, because every seat can write these tables.
 - Add an `expect_updated_at` guard on file updates, like the `expect_status` guard escalations already have.
-- ~~Gate `FileAttachment`, `Notification` and search by the owning app.~~ *Done: we reported 83 e-sign titles (including 3 offer letters) and 92 notifications visible to our seat; both are fixed (board N179, N180).*
+- Gate `FileAttachment`, `Notification` and search by the owning app. The board marks this fixed (N179, N180), but on 25 Sep our seat still sees 83 e-sign titles (and can write those rows) and 92 notifications about apps it is refused. *Re-filed as bugs.*
+- Merge the 23 Sep Drive repair copies back into the originals. Every Keystone scenario file now exists twice (Incoming holds 18 rows), and the copies lost tags, sender, part link and archive state, so the superseded RevB copy looks current. *Filed as a bug.*
 - Add a document-type custom field, and give Automations access to filing rules.
 - Make the AgentTask scheduler execute runs, time out stuck ones, and reject schedules it can't parse.
 
@@ -46,11 +47,11 @@ Why Box is the primary benchmark: it is the closest thing to Rillet for files. I
 
 Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files and Egnyte all show suggestions for review before applying them. Our edge is elsewhere:
 
-- **It cross-checks surfaces instead of trusting one.** During testing, Keystone's Drive folders looked empty while the file list held the files (board N182, now fixed), and search returned 5 of 32 matches (N186, now fixed). The same class of disagreement remains in the filters we filed today. The agent answers from the surface that actually holds the data, and says which one it used.
+- **It cross-checks surfaces instead of trusting one.** Keystone's Drive folders first looked empty while the file list held the files. The fix for that (N182) added a second, bare copy of every file, so now the Drive overview says 15 files and 13 KB while the folders hold 30 rows and 7.1 MB. Search still returns 5 of 32 file matches. The agent answers from the surface that actually holds the data, and says which one it used.
 - **It refuses with evidence.** `scan0042.pdf` has no linked record, no sender and no readable content, and its own description says a human must open it. So the agent escalates it. None of the products we tested returns "no answer, and exactly why" as a normal result.
 - **It catches a write that lands on top of ours.** There is no concurrency guard, so the agent re-reads after each write and reports when another seat has overwritten its change. A UI user never sees that.
 
-**Bugs filed by team20:** 30. Of the first 13, 12 are fixed and live on the class bug board as N179–N190; one (invalid `sort_order`) duplicated Team 4's N144. The 17 filed on 24 Sep, not yet on the board (last updated 23 Sep):
+**Bugs filed by team20:** 45. Of the first 13, 12 are on the class bug board as N179–N190, marked live; one (invalid `sort_order`) duplicated Team 4's N144. Three of those fixes (N179, N180, N186) did not hold on 25 Sep and are re-filed as items 20–22. Filed on 24–25 Sep, not yet on the board (last updated 23 Sep):
 1. MCP list tools advertise filter defaults that return 0 rows
 2. Search treats `%` and `_` as wildcards
 3. Every Drive revision download returns 409
@@ -68,3 +69,18 @@ Box AI agents and M-Files already run multi-step work, and SharePoint, M-Files a
 15. Job ledger and mission control tools show jobs the seat's AgentJob access refuses
 16. `tools.search` tags most Drive tools as module `core`, so `module=drive` hides them
 17. Suryodaya people directory lists companies as employees, with 40 of 100 entries duplicated
+18. The Keystone Drive repair (N182 fix) duplicated all 15 scenario files as bare copies
+19. The same repair re-wrote five Drive access-log events with 23 Sep dates
+20. N180 not in effect: e-sign attachments still listed, titled and writable
+21. N179 not in effect on Keystone: other people's notifications about gated apps visible
+22. Global search still 5 per type; `limit` and `offset` ignored (N186 partial)
+23. Suryodaya storefront publishes a ₹0 "test" product
+24. `endpoint.inventory.shipping_board` offered to seats that can never use it
+25. Keystone goals: company-wide goals stay at 0, and "new opportunities" counts deals by close date
+26. Keystone account plans: the endpoint says no read permission, while REST and MCP return all 20
+27. `endpoint.make.orders` never marks a line late (9 of 9 Keystone lines are past due)
+28. `endpoint.make.orders` stops at 200 rows (Suryodaya 542) with no paging
+29. `endpoint.manufacturing.demand_forecast` drops overdue open orders (Keystone 5,168 unshipped units show as 0)
+30. `endpoint.mission_control.staffing_forecast` measures service time on instantly failed jobs, so an 88-hour-old queue "clears in 11 seconds"
+31. `supplier_scorecard` reports "insufficient history" and zero orders when it was denied the data
+32. Keystone access log records a share of J-BRKT-04 Rev C that exists nowhere
